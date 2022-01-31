@@ -1,0 +1,234 @@
+<html>
+	<head>
+		<!--<link href="https://unpkg.com/video.js/dist/video-js.css" rel="stylesheet">-->
+		<style>
+			html, body {
+				margin: 0;
+				padding: 0;
+			}
+			
+			div.connectionType {
+				position: absolute;			
+				background-color: white;
+				opacity: 0.8;
+				right: 0;
+			}
+			
+			div.row {
+				display: flex;
+				flex-direction: row;
+				justify-content: center;
+				align-items: center;
+			}
+			
+			img {
+				height: 50vh;
+				width: 50vw;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	
+	<body onmouseover='bodyOnMouseOver()' onmouseout='bodyOnMouseOut()'>
+		<div id="divConnectionType" class="connectionType" style="display:none">
+			<input name="connectionType" type="radio" value="web" checked onclick="connectionTypeOnClick()" /> Web
+			<input name="connectionType" type="radio" value="local" onclick="connectionTypeOnClick()" /> Local
+		</div>
+		<div class="row">
+			<img id="1" onload='onLoad(this)' onerror='onError(this)' onclick='onClick(this)' alt='Cancello' />
+			<img id="2" onload='onLoad(this)' onerror='onError(this)' onclick='onClick(this)' alt='Corridoio anteriore' />
+		</div>
+		<div class="row">
+			<img id="3" onload='onLoad(this)' onerror='onError(this)' onclick='onClick(this)' alt='Corridoio posteriore' />
+			<img id="4" onload='onLoad(this)' onerror='onError(this)' onclick='onClick(this)' alt='Giardino' />
+		</div>
+		
+		<!--<img src="http://192.168.188.10:88/cgi-bin/CGIStream.cgi?cmd=GetMJStream&usr=guest&pwd=guest" />-->
+		<!--<video-js id="v1" class="vjs-default-skin" controls preload="auto" width="640" height="480" style="border:1px solid black" data-setup="{}">
+			<source src="rtsp://guest:guest@192.168.188.10:88/videoSub" type="application/x-mpegURL">
+			<p class="vjs-no-js">
+				To view this video please enable JavaScript, and consider upgrading to a
+				web browser that
+				<a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+			</p>
+		</video-js>
+		
+		<script src="https://unpkg.com/video.js/dist/video.js"></script>
+		<script src="https://unpkg.com/@videojs/http-streaming/dist/videojs-http-streaming.js"></script>-->
+	</body>
+	<script>
+		const web1 = "http://jackdanielshome.ddns.net:65001/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		const web2 = "http://jackdanielshome.ddns.net:65002/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		const web3 = "http://jackdanielshome.ddns.net:65003/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		const web4 = "http://jackdanielshome.ddns.net:65004/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		const local1 = "http://192.168.188.10:88/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		const local2 = "http://192.168.188.11:88/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		const local3 = "http://192.168.188.12:88/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		const local4 = "http://192.168.188.13:88/CGIProxy.fcgi?cmd=snapPicture2&usr=guest&pwd=guest&t=";
+		
+		
+		var oldVisibilityState = null;
+		var visibilityState = 1;
+		var fullScreen = "";
+		var connType = "web";
+		var url = document.location.protocol + "//" + document.location.hostname + (document.location.port ? ":" + document.location.port : "") + document.location.pathname;
+		var search = document.location.search;
+		var params = getParams();
+				
+		Object.keys(params).map(x => {
+			if (x === "fs") {
+				var imgId = params[x];
+				if (imgId) {
+					document.getElementById(imgId).click();
+				}
+			}
+			if (x === "ct") {
+				connType = params[x];
+			}
+		});
+		
+		setImagesSrc(connType === "local");
+		var connTypes = document.getElementsByName("connectionType");
+		for (var i = 0; i < connTypes.length; i++) {
+			if (connTypes[i].value === connType) {
+				connTypes[i].checked = "checked";
+			} else {
+				connTypes[i].checked = undefined;
+			}
+		}
+		
+	
+		document.addEventListener("visibilitychange", function () {
+			oldVisibilityState = visibilityState;
+			visibilityState = document.visibilityState == "visible" ? 1 : 0;
+			console.log(document.visibilityState);
+			
+			if (visibilityState != oldVisibilityState && visibilityState) {
+				document.location.href = url + search;
+			}
+		});
+		
+		function bodyOnMouseOver() {
+			document.getElementById("divConnectionType").style.display = "block";
+		}
+		
+		function bodyOnMouseOut() {
+			document.getElementById("divConnectionType").style.display = "none";
+		}
+		
+		function connectionTypeOnClick() {
+			var checkes = document.getElementsByName("connectionType");
+			for (var i = 0; i < checkes.length; i++) {
+				if (checkes[i].checked) {
+					var isLocal = checkes[i].value === "local";
+					setImagesSrc(isLocal);
+					if (isLocal) {
+						params.ct = "local";
+					} else {
+						delete params.ct;
+					}
+					search = getSearchByParams();
+				}
+			}
+		}
+		
+		function setImagesSrc(isLocal) {
+			document.getElementById("1").src = isLocal ? local1 : web1;
+			document.getElementById("2").src = isLocal ? local2 : web2;
+			document.getElementById("3").src = isLocal ? local3 : web3;
+			document.getElementById("4").src = isLocal ? local4 : web4;
+		}
+		
+		function setSingleImageSrc(isLocal, imgId) {
+			iframes[imgId].getElementById(imgId).src = isLocal ? local1 : web1;
+		}
+				
+		function onLoad(img) {
+			
+			if (visibilityState && (fullScreen === "" || img.id === fullScreen)) {
+				var timeout = img.id === fullScreen ? 500 : 1000;
+				setTimeout(function() {
+					img.src = img.src.substring(0, (img.src.lastIndexOf("t=")+2))+(new Date()).getTime();
+				}, timeout);
+			}
+		}
+		
+		function onError(img) {
+			
+			if (visibilityState && (fullScreen === "" || img.id === fullScreen)) {
+				setTimeout(function() {
+					img.src = img.src.substring(0, (img.src.lastIndexOf("t=")+2))+(new Date()).getTime();
+				}, 5000);
+			}
+			
+		}
+		
+		function toggleAllImages(visible) {
+			var imgs = document.getElementsByTagName("img");
+			for (var i = 0; i < imgs.length; i++) {
+				if (visible) {
+					imgs[i].style.display = "block";
+					imgs[i].src = imgs[i].src;
+				} else {
+					imgs[i].style.display = "none";
+				}
+			}
+		}
+		
+		
+		function onClick(img) {
+			var imgId = getParamValueByName("fs");
+			if (imgId !== "") {
+				delete params.fs;
+				search = getSearchByParams();
+			}
+		
+			if (fullScreen === "") {
+				toggleAllImages(false);		
+				img.style.height = "100vh";
+				img.style.width = "100vw";
+				img.style.display = "block";
+				fullScreen = img.id;
+				params["fs"] = img.id;
+				search = getSearchByParams();
+			} else {
+				toggleAllImages(true);
+				img.style.height = "50vh";
+				img.style.width = "50vw";
+				fullScreen = "";				
+			}
+		}
+		
+		
+		function getParams() {
+			var result = {};
+			var params = search.replace("?", "").split("&").filter(x => x !== "");
+			return params.reduce((result, current) => {
+				var param = {};
+				param[current.split("=")[0]] = current.split("=")[1];
+				return { ...result, ...param };
+			}, {});
+		}
+		
+		function getParamValueByName(name) {
+			var paramName = Object.keys(params).filter(x => x === name);
+			if (paramName.length === 1) {
+				return params[paramName[0]];
+			}
+			return "";
+		}
+		
+		function getSearchByParams() {
+			var result = "";
+			Object.keys(params).map(x => {
+				result += x + "=" + params[x] + "&";
+			});
+			if (result.length > 0) {
+				result = result.substr(0, result.length - 1);
+				result = "?" + result;
+			}
+			return result;
+		}
+		
+	</script>
+</html>
